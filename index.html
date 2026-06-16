@@ -118,6 +118,7 @@ function generateCalendar() {
         "BEGIN:VEVENT",
         `DTSTART:${startTime}`,
         `DTEND:${endTime}`,
+        "RRULE:FREQ=MONTHLY;INTERVAL=5"
         "SUMMARY:📌 周期提醒事项",
         `DESCRIPTION:您设定的 ${months} 个月周期到啦，请处理相关任务。`,
         "BEGIN:VALARM",
