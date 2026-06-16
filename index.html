@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>周期提醒助手</title>
-    <!-- Web App 移动端全屏核心元标签 -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="周期提醒">
@@ -90,7 +89,8 @@
     <select id="monthSelect">
         <option value="1">1 个月</option>
         <option value="2">2 个月</option>
-        <option value="5" selected>5 个月 (5个月左右)</option>
+        <option value="3">3 个月 (每季度)</option>
+        <option value="5" selected>5 个月 (终身循环)</option>
         <option value="6">6 个月 (半年)</option>
         <option value="12">12 个月 (一年)</option>
     </select>
@@ -109,7 +109,7 @@ function generateCalendar() {
     // 格式化为符合 .ics 规范的时间格式 (YYYYMMDDTHHMMSSZ)
     const formatDate = (date) => date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
     const startTime = formatDate(reminderDate);
-    const endTime = formatDate(new Date(reminderDate.getTime() + 60 * 60 * 1000)); // 设为1小时事件
+    const endTime = formatDate(new Date(reminderDate.getTime() + 60 * 60 * 1000)); // 默认设置1小时事件
 
     // 组装日历事件数据
     const icsContent = [
@@ -118,11 +118,11 @@ function generateCalendar() {
         "BEGIN:VEVENT",
         `DTSTART:${startTime}`,
         `DTEND:${endTime}`,
-        "RRULE:FREQ=MONTHLY;INTERVAL=5"
+        `RRULE:FREQ=MONTHLY;INTERVAL=${months}`, // 核心一劳永逸代码：根据选中的月数自动实现无限顺延
         "SUMMARY:📌 周期提醒事项",
         `DESCRIPTION:您设定的 ${months} 个月周期到啦，请处理相关任务。`,
         "BEGIN:VALARM",
-        "TRIGGER:-PT0M", // 准时提醒，不提前
+        "TRIGGER:-PT0M", // 准时强提醒，不提前
         "ACTION:DISPLAY",
         "DESCRIPTION:Reminder",
         "END:VALARM",
@@ -130,14 +130,15 @@ function generateCalendar() {
         "END:VCALENDAR"
     ].join("\r\n");
 
-    // 创建隐藏的下载链接，触发手机系统接管日历事件
+    // 安全、防拦截的文件导出机制
     const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8;' });
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.download = "reminder.ics";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    const url = URL.createObjectURL(blob);
+    
+    // 直接让当前页面重定向到文件流，绕过一切移动端弹窗拦截规则
+    window.location.href = url; 
+    
+    // 延时释放内存
+    setTimeout(() => URL.revokeObjectURL(url), 100);
 }
 </script>
 
