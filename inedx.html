@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>周期提醒助手</title>
+    <!-- Web App 移动端全屏核心元标签 -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="周期提醒">
+    <style>
+        :root {
+            --bg: #f5f7fa;
+            --card-bg: #ffffff;
+            --text: #333333;
+            --btn: #007aff;
+        }
+        /* 自动适配手机深色模式 */
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg: #1c1c1e;
+                --card-bg: #2c2c2e;
+                --text: #ffffff;
+                --btn: #0a84ff;
+            }
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            transition: all 0.3s ease;
+        }
+        .card {
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: 24px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.08);
+            text-align: center;
+            width: 85%;
+            max-width: 340px;
+        }
+        .icon { font-size: 55px; margin-bottom: 15px; }
+        h2 { margin: 10px 0; font-size: 22px; }
+        p { opacity: 0.7; font-size: 14px; margin-bottom: 25px; }
+        select, button {
+            width: 100%;
+            padding: 14px;
+            margin-top: 15px;
+            border-radius: 14px;
+            border: 1px solid rgba(0,0,0,0.1);
+            font-size: 16px;
+            box-sizing: border-box;
+            -webkit-appearance: none;
+        }
+        select {
+            background: var(--card-bg);
+            color: var(--text);
+            text-align: center;
+            font-weight: 500;
+            cursor: pointer;
+        }
+        button {
+            background-color: var(--btn);
+            color: white;
+            border: none;
+            font-weight: bold;
+            cursor: pointer;
+            transition: opacity 0.2s, transform 0.1s;
+            margin-top: 25px;
+        }
+        button:active { 
+            opacity: 0.8; 
+            transform: scale(0.98);
+        }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <div class="icon">📅</div>
+    <h2>周期提醒助手</h2>
+    <p>设定自定义周期，到期自动弹窗响铃</p>
+    
+    <label for="monthSelect" style="display:none;">选择周期</label>
+    <select id="monthSelect">
+        <option value="1">1 个月</option>
+        <option value="2">2 个月</option>
+        <option value="3" selected>3 个月 (每季度)</option>
+        <option value="6">6 个月 (半年)</option>
+        <option value="12">12 个月 (一年)</option>
+    </select>
+    
+    <button onclick="generateCalendar()">📥 同步到手机日历</button>
+</div>
+
+<script>
+function generateCalendar() {
+    const months = parseInt(document.getElementById('monthSelect').value);
+    const now = new Date();
+    
+    // 精准计算几个月后的提醒日期
+    const reminderDate = new Date(now.setMonth(now.getMonth() + months));
+    
+    // 格式化为符合 .ics 规范的时间格式 (YYYYMMDDTHHMMSSZ)
+    const formatDate = (date) => date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+    const startTime = formatDate(reminderDate);
+    const endTime = formatDate(new Date(reminderDate.getTime() + 60 * 60 * 1000)); // 设为1小时事件
+
+    // 组装日历事件数据
+    const icsContent = [
+        "BEGIN:VCALENDAR",
+        "VERSION:2.0",
+        "BEGIN:VEVENT",
+        `DTSTART:${startTime}`,
+        `DTEND:${endTime}`,
+        "SUMMARY:📌 周期提醒事项",
+        `DESCRIPTION:您设定的 ${months} 个月周期到啦，请处理相关任务。`,
+        "BEGIN:VALARM",
+        "TRIGGER:-PT0M", // 准时提醒，不提前
+        "ACTION:DISPLAY",
+        "DESCRIPTION:Reminder",
+        "END:VALARM",
+        "END:VEVENT",
+        "END:VCALENDAR"
+    ].join("\r\n");
+
+    // 创建隐藏的下载链接，触发手机系统接管日历事件
+    const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8;' });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = "reminder.ics";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+</script>
+
+</body>
+</html>
